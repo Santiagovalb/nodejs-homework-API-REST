@@ -1,88 +1,24 @@
-const express = require("express");
-const Joi = require("joi");
+const express = require('express')
+const { basedir } = global;
 
-const router = express.Router();
+const { auth } = require(`${basedir}/middlewares`);
 
-const contacts = require("../../models/contacts");
-const createError = require("../../helpers/createError");
+const ctrl = require(`${basedir}/controllers/contacts`);
 
-const contactsSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().required(),
-  phone: Joi.string().required(),
-});
+const { ctrlWrapper } = require(`${basedir}/helpers`);
 
-router.get("/", async (req, res, next) => {
-  try {
-    const result = await contacts.listContacts();
-    res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-});
+const router = express.Router()
 
-router.get("/:id", async (req, res, next) => {
-  try {
-    const result = await contacts.getContactById(req.params.id);
-    if (!result) {
-      return next(createError("Contact not found", 404));
-    }
-    
-    // Si el contacto se encuentra, envía una respuesta con el contacto en formato JSON
-    res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/', auth, ctrlWrapper(ctrl.getAllContacts));
 
+router.get('/:contactId', auth, ctrlWrapper(ctrl.getContactById));
 
-router.post("/", async (req, res, next) => {
-  try {
-    const { error } = contactsSchema.validate(req.body);
-    if (error) {
-      throw createError(error.message, 400);
-    }
-    const result = await contacts.addContact(req.body);
-    
-    // Envía una respuesta con un mensaje de confirmación si el contacto se agrega con éxito
-    res.status(201).json({ message: "Contacto agregado exitosamente", contact: result });
-  } catch (error) {
-    next(error);
-  }
-});
+router.post('/', auth, ctrlWrapper(ctrl.addContact));
 
+router.delete('/:contactId', auth, ctrlWrapper(ctrl.removeContact));
 
-router.delete("/:id", async (req, res, next) => {
-  try {
-    const result = await contacts.removeContact(req.params.id);
-    if (!result) {
-      throw createError("Contact not found", 404);
-    }
-    
-    // Envía una respuesta con un mensaje de confirmación si el contacto se elimina con éxito
-    res.status(204).send("Contacto eliminado correctamente");
-  } catch (error) {
-    next(error);
-  }
-});
+router.put('/:contactId', auth, ctrlWrapper(ctrl.updateContactById));
 
-router.put("/:id", async (req, res, next) => {
-  try {
-    const { error } = contactsSchema.validate(req.body);
-    if (error) {
-      throw createError(error.message, 400);
-    }
-    const result = await contacts.updateContact(req.params.id, req.body);
-    if (!result) {
-      throw createError("Contact not found", 404);
-    }
-    
-    // Envía una respuesta con un mensaje de confirmación si el contacto se actualiza con éxito
-    res.status(200).json({ message: "Contacto actualizado correctamente", contact: result });
-  } catch (error) {
-    next(error);
-  }
-});
-
+router.patch('/:contactId/favorite', auth, ctrlWrapper(ctrl.updateStatusContact));
 
 module.exports = router;
