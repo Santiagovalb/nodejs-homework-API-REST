@@ -2,7 +2,7 @@ const User = require("../../models/user");
 require("dotenv").config();
 
 const register = async (req, res, next) => {
-  const { username, email, password, subscription } = req.body; 
+  const { username, email, password, subscription, token  } = req.body; 
   
   try {
     const user = await User.findOne({ email });
